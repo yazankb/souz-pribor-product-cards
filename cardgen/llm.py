@@ -1,4 +1,4 @@
-"""Клиенты LLM: OpenAI-совместимый API (OpenAI, OpenRouter, Ollama, vLLM…), Anthropic и mock.
+"""Клиенты LLM: OpenAI-совместимый API (OpenAI, OpenRouter, Ollama, vLLM…), Anthropic.
 
 Все клиенты реализуют один метод ``complete(system, messages) -> str`` и
 бросают исключения из иерархии ``LLMError`` с понятным сообщением.
@@ -6,9 +6,7 @@
 
 from __future__ import annotations
 
-import json
 import random
-import re
 import time
 from typing import Callable, Protocol
 
@@ -184,58 +182,7 @@ class AnthropicClient:
         return text
 
 
-class MockLLMClient:
-    """Офлайн-заглушка для разработки и демонстрации без ключа.
-
-    Строит ответ шаблонно и только из входных данных (числа берутся из названия
-    и характеристик), поэтому проходит проверки. Тексты НЕ являются результатом LLM.
-    """
-
-    provider = "mock"
-    model = "mock"
-
-    _FILLER = (
-        "Прибор подходит для комплектации новых объектов и для замены вышедшего из строя оборудования. "
-        "Перед заказом сверьте параметры с проектной документацией и условиями эксплуатации. "
-        "Специалисты магазина помогут подобрать исполнение и подготовят коммерческое предложение для юридического лица. "
-    )
-
-    def complete(self, system: str, messages: list[Message]) -> str:
-        match = re.search(r"<product_data>\s*(\{.*?\})\s*</product_data>", messages[0]["content"], re.S)
-        data = json.loads(match.group(1)) if match else {}
-        name = data.get("name", "Измерительный прибор")
-        vendor = data.get("manufacturer", "")
-        specs: dict = data.get("specs", {})
-
-        title = f"{name} {vendor}".strip()
-        if len(title) > 70:
-            title = name[:70].rstrip()
-        spec_text = "; ".join(f"{k} — {v}" for k, v in list(specs.items())[:6])
-        description = f"{name}{' производства ' + vendor if vendor else ''} — измерительный прибор для промышленного применения. "
-        if spec_text:
-            description += f"Основные характеристики: {spec_text}. "
-        while len(description) < 850:
-            description += self._FILLER
-        description = description[:1150].rsplit(". ", 1)[0] + "."
-
-        lower = name.lower()
-        draft = {
-            "seo_title": title,
-            "seo_description": description,
-            "search_queries": [lower, f"{lower} купить", f"{lower} цена"],
-            "commercial": {
-                "audience": ["Службы КИПиА промышленных предприятий", "Монтажные и сервисные организации"],
-                "tasks": ["Комплектация объектов", "Замена приборов при ремонте"],
-                "summary": f"{name} — позиция для комплектации и ремонта; параметры подтверждены входными данными.",
-            },
-            "notes": ["Ответ сгенерирован mock-клиентом без обращения к LLM."],
-        }
-        return json.dumps(draft, ensure_ascii=False)
-
-
 def create_client(settings: Settings) -> LLMClient:
-    if settings.provider == "mock":
-        return MockLLMClient()
     if settings.provider == "anthropic":
         return AnthropicClient(settings)
     return OpenAICompatibleClient(settings)

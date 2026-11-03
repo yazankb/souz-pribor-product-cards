@@ -15,12 +15,11 @@ try:  # python-dotenv необязателен: без него просто ч�
 except ImportError:  # pragma: no cover
     load_dotenv = None
 
-SUPPORTED_PROVIDERS = ("openai", "anthropic", "mock")
+SUPPORTED_PROVIDERS = ("openai", "anthropic")
 
 DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-opus-5-5",
-    "mock": "mock",
 }
 
 # Стандартные имена переменных провайдеров — используются, если LLM_API_KEY не задан.
@@ -79,13 +78,10 @@ class Settings:
                 f"Неизвестный LLM_PROVIDER={self.provider!r}. "
                 f"Допустимые значения: {', '.join(SUPPORTED_PROVIDERS)}."
             )
-        if self.provider == "mock":
-            return
         if not self.api_key and not self._is_local_endpoint():
             key_var = PROVIDER_KEY_VARS.get(self.provider, "LLM_API_KEY")
             raise ConfigError(
-                f"Не задан ключ API: укажите LLM_API_KEY (или {key_var}) в окружении или в файле .env. "
-                "Для работы без ключа используйте режим --mock."
+                f"Не задан ключ API: укажите LLM_API_KEY (или {key_var}) в окружении или в файле .env."
             )
 
     def _is_local_endpoint(self) -> bool:
@@ -95,16 +91,16 @@ class Settings:
         )
 
 
-def load_settings(provider_override: str | None = None, env_file: str | Path | None = ".env") -> Settings:
-    """Собирает настройки из окружения. ``provider_override`` используется для флага --mock."""
+def load_settings(env_file: str | Path | None = ".env") -> Settings:
+    """Собирает настройки из окружения и файла .env."""
     if load_dotenv is not None and env_file and Path(env_file).is_file():
         load_dotenv(env_file, override=False)
 
-    provider = (provider_override or os.getenv("LLM_PROVIDER", "openai")).strip().lower()
+    provider = os.getenv("LLM_PROVIDER", "openai").strip().lower()
     api_key = os.getenv("LLM_API_KEY", "").strip() or os.getenv(PROVIDER_KEY_VARS.get(provider, ""), "").strip()
     settings = Settings(
         provider=provider,
-        model="mock" if provider == "mock" else (os.getenv("LLM_MODEL", "").strip() or DEFAULT_MODELS.get(provider, "")),
+        model=os.getenv("LLM_MODEL", "").strip() or DEFAULT_MODELS.get(provider, ""),
         api_key=api_key or None,
         base_url=os.getenv("LLM_BASE_URL", "").strip() or None,
         timeout=_env_float("LLM_TIMEOUT", 60.0),

@@ -121,11 +121,6 @@ def test_local_endpoint_needs_no_key(monkeypatch):
     assert load_settings(env_file=None).api_key is None
 
 
-def test_mock_override_ignores_model(monkeypatch):
-    monkeypatch.setenv("LLM_MODEL", "gpt-x")
-    settings = load_settings(provider_override="mock", env_file=None)
-    assert settings.provider == "mock" and settings.model == "mock"
-
 
 class _FakeMessages:
     def __init__(self, response=None, error=None):

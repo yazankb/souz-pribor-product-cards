@@ -4,7 +4,7 @@ import pytest
 
 from cardgen.generator import CardGenerator, parse_llm_json
 from cardgen.input_parser import parse_product
-from cardgen.llm import LLMRateLimitError, LLMResponseError, MockLLMClient
+from cardgen.llm import LLMRateLimitError, LLMResponseError
 from cardgen.render import card_to_markdown
 from cardgen.schemas import NO_DATA
 
@@ -112,7 +112,3 @@ def test_parse_llm_json_rejects_wrong_schema():
     with pytest.raises(ValueError, match="commercial"):
         parse_llm_json(json.dumps({k: v for k, v in make_draft().items() if k != "commercial"}))
 
-
-def test_mock_client_end_to_end():
-    card = CardGenerator(MockLLMClient()).generate(parse_product(dict(MANOMETER)))
-    assert card.status == "ok", card.validation.issues

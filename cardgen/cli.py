@@ -41,7 +41,7 @@ def _expand(inputs: list[str]) -> list[str]:
 
 def cmd_generate(args: argparse.Namespace) -> int:
     try:
-        settings = load_settings(provider_override="mock" if args.mock else None)
+        settings = load_settings()
     except ConfigError as exc:
         print(f"Ошибка конфигурации: {exc}", file=sys.stderr)
         return EXIT_CONFIG
@@ -152,7 +152,6 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--out", help="Папка для сохранения .md/.json (по умолчанию — вывод в консоль)")
     gen.add_argument("--format", choices=("md", "json", "both"), default="both",
                      help="Формат результата (для консоли «both» = Markdown)")
-    gen.add_argument("--mock", action="store_true", help="Офлайн-режим без LLM (шаблонный ответ)")
     gen.set_defaults(func=cmd_generate)
 
     yl = sub.add_parser("yml-list", help="Показать офферы фида с количеством характеристик")

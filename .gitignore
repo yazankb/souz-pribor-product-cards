@@ -1,0 +1,18 @@
+# Секреты
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Локальные файлы
+*.xml
+SUBMISSION_MESSAGE.md
+.idea/
+.vscode/

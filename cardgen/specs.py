@@ -140,11 +140,12 @@ def build_specs_report(parsed: ParsedInput) -> SpecsReport:
         if any(std.matches(line) for line in spec_lines + empty_lines):
             continue  # поле заполнено или уже отмечено как пустое выше
         characteristics.append(Characteristic(name=std.title, value=NO_DATA, source="missing"))
-        if description and std.matches(description):
+        in_description = bool(description and std.matches(description))
+        if in_description:
             comment = "Нет в характеристиках, но упоминается в описании — проверьте и перенесите в таблицу."
         else:
             comment = "Нет во входных данных — уточните у производителя или по паспорту."
-        missing.append(MissingField(field=std.title, comment=comment))
+        missing.append(MissingField(field=std.title, comment=comment, in_description=in_description))
 
     return SpecsReport(profile=profile, characteristics=characteristics, missing=missing)
 

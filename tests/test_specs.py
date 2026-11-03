@@ -43,6 +43,21 @@ def test_feature_mentioned_only_in_description_needs_clarification():
     assert "Нет во входных данных" in comments["Класс точности / погрешность"]
 
 
+def test_prompt_allows_values_found_only_in_description():
+    from cardgen.prompts import build_user_prompt
+
+    parsed = parse_product({
+        "name": "Датчик давления ПД100",
+        "specs": {"диапазон измерений": "0…1 МПа"},
+        "description": "Выходной сигнал 4…20 мА.",
+    })
+    prompt = build_user_prompt(parsed.product, build_specs_report(parsed))
+    missing_line, description_line = prompt.splitlines()[1:3]
+    assert "Интерфейсы / выходной сигнал" not in missing_line
+    assert "Класс точности / погрешность" in missing_line
+    assert "есть в description" in description_line and "Интерфейсы / выходной сигнал" in description_line
+
+
 def test_empty_spec_not_duplicated_by_standard_field():
     parsed = parse_product({"name": "Датчик давления", "specs": {"Питание": "", "диапазон": "0…1 МПа"}})
     report = build_specs_report(parsed)

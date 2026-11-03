@@ -51,6 +51,7 @@ class Characteristic(BaseModel):
 class MissingField(BaseModel):
     field: str
     comment: str
+    in_description: bool = False  # нет в specs, но значение есть в описании
 
 
 class ValidationIssue(BaseModel):

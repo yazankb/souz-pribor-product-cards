@@ -67,11 +67,20 @@ SYSTEM_PROMPT = f"""Ты — редактор B2B-интернет-магази�
 
 def build_user_prompt(product: ProductInput, report: SpecsReport) -> str:
     data = product.model_dump(exclude_none=True)
-    missing = [m.field for m in report.missing]
+    missing = [m.field for m in report.missing if not m.in_description]
+    from_description = [m.field for m in report.missing if m.in_description]
     missing_text = ", ".join(missing) if missing else "нет"
+    lines = [
+        f"Тип прибора (определён автоматически): {report.profile.title}.",
+        f"Отсутствуют во входных данных (не упоминай их значения): {missing_text}.",
+    ]
+    if from_description:
+        lines.append(
+            "Нет в specs, но значение есть в description — используй его дословно из description "
+            f"и не считай противоречием: {', '.join(from_description)}."
+        )
     return (
-        f"Тип прибора (определён автоматически): {report.profile.title}.\n"
-        f"Отсутствуют во входных данных (не упоминай их значения): {missing_text}.\n\n"
+        "\n".join(lines) + "\n\n"
         f"<product_data>\n{json.dumps(data, ensure_ascii=False, indent=2)}\n</product_data>\n\n"
         "Подготовь черновик карточки по правилам. Верни только JSON."
     )

@@ -1,0 +1,95 @@
+{
+  "status": "insufficient_data",
+  "product_name": "Манометр показывающий ТМ-510Р.00(0-2,5 МПа)G1/2",
+  "manufacturer": "РОСМА",
+  "seo_title": null,
+  "seo_title_length": null,
+  "seo_description": null,
+  "seo_description_length": null,
+  "key_characteristics": [
+    {
+      "name": "Производитель",
+      "value": "РОСМА",
+      "source": "input"
+    },
+    {
+      "name": "Диапазон измерений",
+      "value": "данных нет",
+      "source": "missing"
+    },
+    {
+      "name": "Класс точности / погрешность",
+      "value": "данных нет",
+      "source": "missing"
+    },
+    {
+      "name": "Присоединение",
+      "value": "данных нет",
+      "source": "missing"
+    },
+    {
+      "name": "Диаметр корпуса",
+      "value": "данных нет",
+      "source": "missing"
+    },
+    {
+      "name": "Корпус / степень защиты",
+      "value": "данных нет",
+      "source": "missing"
+    }
+  ],
+  "search_queries": [],
+  "commercial_block": null,
+  "missing_data": [
+    {
+      "field": "Характеристики (specs)",
+      "comment": "Не передано ни одной характеристики.",
+      "in_description": false
+    },
+    {
+      "field": "Описание",
+      "comment": "Нет текстового описания или фрагмента паспорта.",
+      "in_description": false
+    },
+    {
+      "field": "Диапазон измерений",
+      "comment": "Нет во входных данных — уточните у производителя или по паспорту.",
+      "in_description": false
+    },
+    {
+      "field": "Класс точности / погрешность",
+      "comment": "Нет во входных данных — уточните у производителя или по паспорту.",
+      "in_description": false
+    },
+    {
+      "field": "Присоединение",
+      "comment": "Нет во входных данных — уточните у производителя или по паспорту.",
+      "in_description": false
+    },
+    {
+      "field": "Диаметр корпуса",
+      "comment": "Нет во входных данных — уточните у производителя или по паспорту.",
+      "in_description": false
+    },
+    {
+      "field": "Корпус / степень защиты",
+      "comment": "Нет во входных данных — уточните у производителя или по паспорту.",
+      "in_description": false
+    }
+  ],
+  "needs_clarification": [
+    "Недостаточно данных для генерации: нужны хотя бы характеристики (specs) или текстовое описание / фрагмент паспорта. Запрос в LLM не отправлялся, чтобы модель не придумывала характеристики."
+  ],
+  "input_warnings": [],
+  "validation": {
+    "passed": false,
+    "attempts": 0,
+    "issues": []
+  },
+  "meta": {
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "generated_at": "2026-11-03T22:10:54+00:00",
+    "instrument_type": "Манометр / прибор давления показывающий"
+  }
+}

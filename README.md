@@ -45,7 +45,7 @@ cp .env.example .env        # Windows: copy .env.example .env
 
 | Переменная | Назначение |
 |---|---|
-| `LLM_PROVIDER` | `openai` — любой OpenAI-совместимый API (OpenAI, OpenRouter, DeepSeek, Ollama, vLLM); `anthropic` — Claude; `mock` — офлайн-заглушка |
+| `LLM_PROVIDER` | `openai` — любой OpenAI-совместимый API (OpenAI, OpenRouter, DeepSeek, Ollama, vLLM); `anthropic` — Claude |
 | `LLM_API_KEY` | ключ (или стандартные `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) |
 | `LLM_MODEL` | модель; по умолчанию `gpt-4o-mini` для `openai`, `claude-opus-5-5` для `anthropic` |
 | `LLM_BASE_URL` | адрес OpenAI-совместимого API, например `https://openrouter.ai/api/v1` или `http://localhost:11434/v1` |
@@ -64,9 +64,6 @@ python -m cardgen generate examples/input/*.json --out examples/output
 
 # Только JSON; чтение из stdin
 python -m cardgen generate - --format json < product.json
-
-# Без ключа: шаблонный офлайн-ответ (для проверки установки, НЕ результат LLM)
-python -m cardgen generate examples/input/1_manometer_tm510.json --mock
 ```
 
 Коды выхода: `0` — карточка готова, `1` — карточка требует проверки или данных недостаточно,
@@ -78,11 +75,18 @@ python -m cardgen generate examples/input/1_manometer_tm510.json --mock
 python -m cardgen serve            # или: uvicorn cardgen.web:app --reload
 ```
 
-Откройте <http://127.0.0.1:8000>. Данные можно ввести в форму (характеристики — по строке
-`название: значение`) или вставить JSON; в выпадающем списке есть все примеры из `examples/`.
-У каждого поля результата есть кнопка «Копировать», на вкладках — полный Markdown и JSON.
+Откройте <http://127.0.0.1:8000>. Страница сразу показывает готовые карточки из `examples/output`
+(блок «Готовые результаты» — без повторного запроса к LLM). Новую карточку можно сгенерировать
+из формы (характеристики — по строке `название: значение`) или из JSON; кнопки-примеры подставляют
+файлы из `examples/`.
 
-API: `POST /api/generate` с JSON-телом → `{"card": {...}, "markdown": "..."}`.
+Результат показан наглядно: статус и сводка проверок (длины title/description относительно нормы,
+заполненность характеристик), превью сниппета в поиске, таблица характеристик с пометками
+«данных нет», поисковые запросы, блок для менеджера и список того, что нужно уточнить.
+У каждого блока есть кнопка «Копировать», на вкладках — полный Markdown и JSON.
+
+API: `POST /api/generate` с JSON-телом → `{"card": {...}, "markdown": "..."}`;
+`GET /api/results` — готовые карточки из `examples/output`; `GET /api/health` — подключённая модель (без ключа).
 Ошибки: `400` — невалидный вход, `502` — ошибка LLM API, `503` — сервис не настроен (нет ключа).
 Документация OpenAPI: <http://127.0.0.1:8000/docs>.
 
@@ -93,7 +97,8 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Тесты не требуют ключа и сети: LLM подменяется заглушкой, HTTP — `httpx.MockTransport`.
+Тесты не требуют ключа и сети: в тестах LLM подменяется тестовым двойником (`tests/conftest.py`), HTTP — `httpx.MockTransport`.
+В самом сервисе заглушки нет — карточки генерирует только настоящая модель.
 
 ---
 
@@ -174,7 +179,7 @@ validation ── длины, количество запросов, числа 
 | `cardgen/input_parser.py` | разбор и нормализация входа, сбор всех ошибок сразу |
 | `cardgen/specs.py` | профили типов приборов, таблица характеристик, недостающие данные |
 | `cardgen/prompts.py` | системный промпт, пользовательский промпт, промпт исправления |
-| `cardgen/llm.py` | клиенты OpenAI-совместимого API (httpx), Anthropic (официальный SDK), mock; повторы и ошибки |
+| `cardgen/llm.py` | клиенты OpenAI-совместимого API (httpx), Anthropic (официальный SDK); повторы и ошибки |
 | `cardgen/validation.py` | проверки формата и «заземления» текста на входные данные |
 | `cardgen/generator.py` | оркестрация и цикл исправлений |
 | `cardgen/render.py` | Markdown для контент-менеджера |

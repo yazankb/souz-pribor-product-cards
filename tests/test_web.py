@@ -52,3 +52,22 @@ def test_not_configured_503():
 
     resp = _client(factory=factory).post("/api/generate", json=MANOMETER)
     assert resp.status_code == 503
+
+
+def test_saved_results_listed():
+    data = _client(FakeLLM([make_draft()])).get("/api/results").json()
+    assert data, "examples/output должен содержать готовые карточки"
+    for item in data.values():
+        assert item["card"]["status"] in ("ok", "needs_review", "insufficient_data")
+        assert item["markdown"].startswith("# Черновик карточки")
+
+
+def test_health_reports_missing_key(monkeypatch):
+    from cardgen import web
+
+    def no_key():
+        raise ConfigError("Не задан ключ API")
+
+    monkeypatch.setattr(web, "load_settings", no_key)
+    data = _client(FakeLLM([make_draft()])).get("/api/health").json()
+    assert data["configured"] is False and "ключ" in data["message"]

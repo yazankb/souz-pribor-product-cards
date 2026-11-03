@@ -9,6 +9,7 @@ POST /api/generate принимает тот же JSON, что и CLI, и воз
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Callable
 
@@ -47,7 +48,24 @@ def create_app(generator_factory: Callable[[], CardGenerator] = default_generato
 
     @app.get("/api/health")
     def health() -> dict:
-        return {"status": "ok"}
+        """Статус сервиса и подключённая модель (ключ не возвращается)."""
+        try:
+            settings = load_settings()
+        except ConfigError as exc:
+            return {"status": "ok", "configured": False, "message": str(exc)}
+        return {"status": "ok", "configured": True, "provider": settings.provider, "model": settings.model}
+
+    @app.get("/api/results")
+    def results() -> dict:
+        """Готовые карточки из examples/output — показываются в форме без повторного запроса к LLM."""
+        items = {}
+        for path in sorted((EXAMPLES_DIR / "output").glob("*.json")):
+            md_path = path.with_suffix(".md")
+            items[path.stem] = {
+                "card": json.loads(path.read_text(encoding="utf-8")),
+                "markdown": md_path.read_text(encoding="utf-8") if md_path.is_file() else "",
+            }
+        return items
 
     @app.get("/api/examples")
     def examples() -> dict:

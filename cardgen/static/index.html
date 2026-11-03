@@ -3,105 +3,306 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Черновик товарной карточки</title>
+<title>AI-карточки КИП</title>
 <style>
-  :root { --fg:#1d232b; --muted:#5d6876; --line:#d8dde3; --bg:#f5f7f9; --card:#fff; --accent:#0b5cad; --ok:#1e7a3c; --warn:#a15c00; --err:#b3261e; }
+  :root {
+    --bg: #f3f5f8; --surface: #ffffff; --surface-2: #f7f9fb; --fg: #17202b; --muted: #5f6b7a; --faint: #8b96a4;
+    --line: #e2e7ee; --accent: #1652c8; --accent-soft: #e8effc; --ok: #15803d; --ok-soft: #e7f6ec;
+    --warn: #b45309; --warn-soft: #fdf3e3; --err: #b42318; --err-soft: #fdecea; --info: #0e7490; --info-soft: #e4f5f8;
+    --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.06); --radius: 12px;
+    --serp-title: #1a0dab; --serp-url: #1e6b38;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f141a; --surface: #161d25; --surface-2: #1b2430; --fg: #e6ebf1; --muted: #9aa7b6; --faint: #6f7c8b;
+      --line: #263241; --accent: #6d9cff; --accent-soft: #1b2a45; --ok: #4ade80; --ok-soft: #14301f;
+      --warn: #fbbf24; --warn-soft: #33270f; --err: #f87171; --err-soft: #3a1a1a; --info: #5ad1e6; --info-soft: #12303a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4); --serp-title: #8ab4f8; --serp-url: #6fcf97;
+    }
+  }
   * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--fg); background:var(--bg); }
-  header { padding:16px 24px; background:var(--card); border-bottom:1px solid var(--line); }
-  header h1 { margin:0; font-size:20px; }
-  header p { margin:4px 0 0; color:var(--muted); }
-  main { display:grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.3fr); gap:20px; padding:20px 24px; max-width:1400px; margin:0 auto; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding:16px; } }
-  section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; }
-  label { display:block; font-weight:600; margin:12px 0 4px; }
-  label small { font-weight:400; color:var(--muted); }
-  input, textarea, select { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; font:inherit; }
-  textarea { min-height:90px; resize:vertical; }
-  textarea.code { font-family: ui-monospace, Consolas, monospace; font-size:13px; min-height:260px; }
-  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; }
-  button { padding:8px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
-  button.secondary { background:#fff; color:var(--accent); }
-  button:disabled { opacity:.6; cursor:wait; }
-  .tabs button { background:#fff; color:var(--fg); border-color:var(--line); }
-  .tabs button.active { border-color:var(--accent); color:var(--accent); font-weight:600; }
-  .status { padding:8px 12px; border-radius:6px; margin-bottom:12px; font-weight:600; }
-  .status.ok { background:#e6f4ea; color:var(--ok); }
-  .status.needs_review, .status.insufficient_data { background:#fff4e0; color:var(--warn); }
-  .status.error { background:#fdecea; color:var(--err); }
-  .field { border-top:1px solid var(--line); padding:10px 0; }
-  .field h3 { margin:0 0 6px; font-size:14px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
-  .field h3 span { color:var(--muted); font-weight:400; }
-  .copy { padding:2px 8px; font-size:12px; }
-  .text { white-space:pre-wrap; }
-  table { border-collapse:collapse; width:100%; }
-  td { border-bottom:1px solid var(--line); padding:4px 6px; vertical-align:top; }
-  td.missing { color:var(--warn); font-style:italic; }
-  pre { white-space:pre-wrap; word-break:break-word; background:var(--bg); padding:12px; border-radius:6px; font-size:13px; max-height:70vh; overflow:auto; }
-  .hidden { display:none; }
-  .muted { color:var(--muted); }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); }
+  button, input, textarea { font: inherit; color: inherit; }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); }
+
+  /* Шапка */
+  header { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .bar { max-width: 1440px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 14px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+  .bar h1 { margin: 0; font-size: 17px; line-height: 1.2; }
+  .bar p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+  .model { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+  @media (max-width: 640px) { .bar { padding: 10px 16px; } .bar p { display: none; } .bar h1 { font-size: 15px; } }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+  .dot.off { background: var(--err); }
+
+  #out { scroll-margin-top: 80px; }
+  main { max-width: 1440px; margin: 0 auto; padding: 20px 24px 48px; display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; padding: 16px; } .model span.long { display: none; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .panel-h { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .panel-h h2 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .panel-b { padding: 16px 18px; }
+  aside { display: grid; gap: 16px; }
+
+  /* Ввод */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 11px; font-size: 13px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px; margin-left: auto; }
+  .seg button { border: 0; background: none; padding: 4px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--muted); }
+  .seg button.active { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); font-weight: 600; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 5px; }
+  label small { font-weight: 400; color: var(--muted); }
+  input, textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  input:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  textarea { min-height: 96px; resize: vertical; }
+  textarea.code { font: 12.5px/1.5 ui-monospace, Consolas, monospace; min-height: 320px; }
+  .primary { width: 100%; margin-top: 16px; padding: 11px 16px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .primary:disabled { opacity: .65; cursor: wait; }
+  .saved { display: grid; gap: 8px; }
+  .saved button { text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; }
+  .saved button:hover, .saved button.active { border-color: var(--accent); }
+  .saved b { font-size: 13.5px; }
+  .saved span { font-size: 12px; color: var(--muted); }
+
+  /* Пустое состояние и загрузка */
+  .empty { padding: 48px 32px; text-align: center; }
+  .empty h2 { margin: 0 0 6px; font-size: 20px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; text-align: left; }
+  @media (max-width: 640px) { .steps { grid-template-columns: 1fr; } }
+  .step { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--surface-2); }
+  .step .n { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+  .step b { display: block; margin-bottom: 2px; }
+  .step span { font-size: 13px; color: var(--muted); }
+  .loading { padding: 40px 32px; }
+  .progress { display: grid; gap: 10px; max-width: 420px; margin: 0 auto; }
+  .progress div { display: flex; gap: 10px; align-items: center; color: var(--faint); }
+  .progress div.active { color: var(--fg); font-weight: 600; }
+  .progress div.done { color: var(--ok); }
+  .spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tick { width: 16px; text-align: center; flex: none; }
+
+  /* Результат */
+  .result { display: grid; gap: 16px; }
+  .hero { padding: 20px 22px; display: grid; gap: 10px; }
+  .hero h2 { margin: 0; font-size: 22px; line-height: 1.3; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; width: fit-content; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.needs_review, .pill.insufficient_data { background: var(--warn-soft); color: var(--warn); }
+  .pill.error { background: var(--err-soft); color: var(--err); }
+  .errbox { padding: 18px 22px; }
+  .errbox ul { margin: 8px 0 0; padding-left: 20px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1200px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+  .tile .k { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .tile .v { font-size: 24px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .tile .s { font-size: 12.5px; color: var(--muted); }
+  .good { color: var(--ok); } .bad { color: var(--warn); }
+  .meter { position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+  .meter i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; background: var(--accent); }
+  .meter .zone { position: absolute; top: 0; bottom: 0; background: var(--ok); opacity: .35; }
+  .meter .mark { position: absolute; top: -1px; bottom: -1px; width: 3px; border-radius: 2px; background: var(--fg); transform: translateX(-1px); }
+  .ring { display: flex; align-items: center; gap: 12px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 12px; }
+  .tabs button { border: 0; background: none; padding: 12px 12px 10px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 600; font-size: 14px; }
+  .tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tabs .spacer { flex: 1; }
+  .sec { padding: 18px 22px; border-top: 1px solid var(--line); }
+  .sec:first-child { border-top: 0; }
+  .sec-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .sec-h h3 { margin: 0; font-size: 15px; }
+  .sec-h .count { font-size: 12.5px; color: var(--muted); }
+  .copy { margin-left: auto; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 4px 10px; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+  .copy:hover { color: var(--accent); border-color: var(--accent); }
+
+  .serp { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--surface-2); max-width: 680px; }
+  .serp .url { font-size: 13px; color: var(--serp-url); display: flex; align-items: center; gap: 6px; }
+  .serp .fav { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+  .serp .t { font-size: 19px; color: var(--serp-title); margin: 4px 0 2px; line-height: 1.3; }
+  .serp .d { font-size: 14px; color: var(--muted); }
+  .desc p { margin: 0 0 10px; }
+  .desc p:last-child { margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { color: var(--muted); width: 45%; }
+  td.val { font-weight: 600; }
+  .nodata { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--warn); background: var(--warn-soft); padding: 1px 8px; border-radius: 999px; }
+  .tablewrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+
+  .qchips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .q { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13.5px; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .box { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface-2); }
+  .box h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .box ul { margin: 0; padding-left: 18px; }
+  .box li { margin: 3px 0; }
+  .quote { margin-top: 14px; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0; }
+
+  .gaps { display: grid; gap: 8px; }
+  .gap { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); }
+  .gap.info { background: var(--info-soft); }
+  .gap .ic { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; background: var(--warn); margin-top: 1px; }
+  .gap.info .ic { background: var(--info); }
+  .gap b { display: block; font-size: 14px; }
+  .gap span { font-size: 13px; color: var(--muted); }
+
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+  .check .ic { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .check.pass .ic { background: var(--ok); }
+  .check.fail .ic { background: var(--warn); }
+  .check b { display: block; font-size: 13.5px; }
+  .check span { font-size: 12.5px; color: var(--muted); }
+
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.55 ui-monospace, Consolas, monospace; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; max-height: 70vh; overflow: auto; }
 </style>
 </head>
 <body>
 <header>
-  <h1>AI-помощник: черновик товарной карточки</h1>
-  <p>Введите данные о приборе — сервис подготовит SEO-тексты, таблицу характеристик и блок для менеджера. Технические значения берутся только из введённых данных.</p>
+  <div class="bar">
+    <div class="logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M8 5.5 7 4M16 5.5 17 4"/></svg>
+    </div>
+    <div>
+      <h1>AI-помощник: товарные карточки КИП</h1>
+      <p>Черновик карточки для B2B-магазина: SEO-тексты, характеристики, запросы и блок для менеджера</p>
+    </div>
+    <div class="model" id="model"><i class="dot" id="modelDot"></i><span id="modelText">Проверка подключения…</span></div>
+  </div>
 </header>
-<main>
-  <section>
-    <div class="row tabs" id="inputTabs">
-      <button type="button" data-mode="form" class="active">Форма</button>
-      <button type="button" data-mode="json">JSON</button>
-      <select id="exampleSelect" style="width:auto"><option value="">Подставить пример…</option></select>
-    </div>
-    <form id="form">
-      <div id="formMode">
-        <label for="name">Наименование *</label>
-        <input id="name" placeholder="Манометр показывающий DM 02">
-        <label for="manufacturer">Производитель</label>
-        <input id="manufacturer" placeholder="Манотомь">
-        <label for="category">Категория <small>(необязательно)</small></label>
-        <input id="category" placeholder="Манометры">
-        <label for="specs">Характеристики <small>— по одной на строку: «название: значение»</small></label>
-        <textarea id="specs" placeholder="диапазон измерений: 0–1,6 МПа&#10;класс точности: 1,5"></textarea>
-        <label for="description">Описание / фрагмент паспорта</label>
-        <textarea id="description" placeholder="Прибор предназначен для измерения избыточного давления…"></textarea>
-      </div>
-      <div id="jsonMode" class="hidden">
-        <label for="json">Входной JSON</label>
-        <textarea id="json" class="code" spellcheck="false"></textarea>
-      </div>
-      <div class="row">
-        <button type="submit" id="submit">Сгенерировать</button>
-        <span class="muted" id="hint"></span>
-      </div>
-    </form>
-  </section>
 
-  <section>
-    <div id="placeholder" class="muted">Здесь появится черновик карточки.</div>
-    <div id="result" class="hidden">
-      <div id="status" class="status"></div>
-      <div class="row tabs" id="outTabs">
-        <button type="button" data-out="card" class="active">Карточка</button>
-        <button type="button" data-out="markdown">Markdown</button>
-        <button type="button" data-out="json">JSON</button>
+<main>
+  <aside>
+    <section class="panel" id="savedPanel">
+      <div class="panel-h"><h2>Готовые результаты</h2></div>
+      <div class="panel-b">
+        <div class="muted" style="font-size:13px;margin-bottom:10px">Сгенерированы заранее реальной моделью (examples/output) — открываются мгновенно.</div>
+        <div class="saved" id="saved"></div>
       </div>
-      <div id="outCard"></div>
-      <div id="outMarkdown" class="hidden"><div class="row"><button type="button" class="secondary copy" data-copy-target="mdPre">Копировать Markdown</button></div><pre id="mdPre"></pre></div>
-      <div id="outJson" class="hidden"><div class="row"><button type="button" class="secondary copy" data-copy-target="jsonPre">Копировать JSON</button></div><pre id="jsonPre"></pre></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h">
+        <h2>Данные о приборе</h2>
+        <div class="seg" id="inputTabs">
+          <button type="button" data-mode="form" class="active">Форма</button>
+          <button type="button" data-mode="json">JSON</button>
+        </div>
+      </div>
+      <div class="panel-b">
+        <div class="muted" style="font-size:13px;margin-bottom:6px">Подставить пример:</div>
+        <div class="chips" id="exampleChips"></div>
+        <form id="form">
+          <div id="formMode">
+            <label for="name">Наименование *</label>
+            <input id="name" placeholder="Манометр показывающий DM 02">
+            <label for="manufacturer">Производитель</label>
+            <input id="manufacturer" placeholder="Манотомь">
+            <label for="category">Категория <small>необязательно</small></label>
+            <input id="category" placeholder="Манометры показывающие">
+            <label for="specs">Характеристики <small>— по одной на строку, «название: значение»</small></label>
+            <textarea id="specs" placeholder="диапазон измерений: 0–1,6 МПа&#10;класс точности: 1,5"></textarea>
+            <label for="description">Описание / фрагмент паспорта</label>
+            <textarea id="description" placeholder="Прибор предназначен для измерения избыточного давления…"></textarea>
+          </div>
+          <div id="jsonMode" class="hidden">
+            <label for="json">Входной JSON</label>
+            <textarea id="json" class="code" spellcheck="false"></textarea>
+          </div>
+          <button type="submit" class="primary" id="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+            Сгенерировать карточку
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </aside>
+
+  <div id="out">
+    <section class="panel empty" id="empty">
+      <h2>Карточка появится здесь</h2>
+      <div class="muted">Выберите пример или введите данные о приборе и нажмите «Сгенерировать карточку».</div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><b>Разбор данных</b><span>Таблица характеристик собирается кодом — дословно из входа. Пустые поля помечаются «данных нет».</span></div>
+        <div class="step"><div class="n">2</div><b>Тексты от LLM</b><span>Модель пишет только SEO-тексты, запросы и блок для менеджера — строго в JSON.</span></div>
+        <div class="step"><div class="n">3</div><b>Автопроверка</b><span>Длины полей, числа и технические термины сверяются со входом; при ошибках — доработка.</span></div>
+      </div>
+    </section>
+
+    <section class="panel loading hidden" id="loading">
+      <div class="progress" id="progress">
+        <div data-step="0"><span class="tick">•</span>Разбор входных данных</div>
+        <div data-step="1"><span class="tick">•</span>Генерация текстов в LLM</div>
+        <div data-step="2"><span class="tick">•</span>Проверка фактов и длин</div>
+      </div>
+    </section>
+
+    <section class="panel errbox hidden" id="error"></section>
+
+    <div class="result hidden" id="result">
+      <section class="panel hero" id="hero"></section>
+      <div class="tiles" id="tiles"></div>
+      <section class="panel">
+        <div class="tabs" id="outTabs">
+          <button type="button" data-out="preview" class="active">Карточка</button>
+          <button type="button" data-out="markdown">Markdown</button>
+          <button type="button" data-out="json">JSON</button>
+        </div>
+        <div id="outPreview"></div>
+        <div id="outMarkdown" class="hidden sec"><div class="sec-h"><h3>Markdown для контент-менеджера</h3><button type="button" class="copy" data-copy="markdown">Копировать</button></div><pre id="mdPre"></pre></div>
+        <div id="outJson" class="hidden sec"><div class="sec-h"><h3>JSON карточки</h3><button type="button" class="copy" data-copy="json">Копировать</button></div><pre id="jsonPre"></pre></div>
+      </section>
     </div>
-  </section>
+  </div>
 </main>
+
 <script>
 const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const TITLE_MAX = 70, DESC_MIN = 800, DESC_MAX = 1200, Q_MIN = 3, Q_MAX = 5;
+
+const EXAMPLE_LABELS = {
+  "input/1_manometer_tm510": "Манометр ТМ-510Р · полные данные",
+  "input/2_pressure_transmitter_pd100": "Датчик ПД100 · неполные данные",
+  "from_feed/tm510_feed": "Только данные фида",
+  "from_feed/pd100_feed": "Только данные фида (ПД100)",
+  "invalid/broken_json": "Битый JSON",
+  "invalid/no_name": "Без наименования",
+};
+const RESULT_LABELS = {
+  "1_manometer_tm510": ["Манометр ТМ-510Р, РОСМА", "Полные данные"],
+  "2_pressure_transmitter_pd100": ["Преобразователь ПД100, ОВЕН", "Неполные данные — пробелы отмечены"],
+  "tm510_feed": ["ТМ-510Р только из фида", "Недостаточно данных — LLM не вызывалась"],
+};
+const STATUS = {
+  ok: ["Готово к вычитке", "✓"],
+  needs_review: ["Требует проверки", "!"],
+  insufficient_data: ["Недостаточно данных", "!"],
+};
+
 let mode = "form";
+let current = { card: null, markdown: "" };
 
-function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
-
+/* ---------- ввод ---------- */
 function setMode(m) {
-  if (m === "json" && mode === "form") $("json").value = JSON.stringify(formToObject(), null, 2);
-  if (m === "form" && mode === "json") { try { objectToForm(JSON.parse($("json").value)); } catch (e) { /* оставим как есть */ } }
+  if (m === mode) return;
+  if (m === "json") $("json").value = JSON.stringify(formToObject(), null, 2);
+  else { try { objectToForm(JSON.parse($("json").value)); } catch (e) { /* оставляем как есть */ } }
   mode = m;
   $("formMode").classList.toggle("hidden", m !== "form");
   $("jsonMode").classList.toggle("hidden", m !== "json");
@@ -126,90 +327,227 @@ function objectToForm(o) {
   $("specs").value = Object.entries(specs).map(([k, v]) => `${k}: ${v ?? ""}`).join("\n");
 }
 
-function copy(text, btn) {
-  navigator.clipboard.writeText(text).then(() => { const t = btn.textContent; btn.textContent = "Скопировано"; setTimeout(() => btn.textContent = t, 1200); });
+function loadExample(text) {
+  $("json").value = text;
+  try { objectToForm(JSON.parse(text)); if (mode === "json") $("json").value = text; }
+  catch (e) { setMode("json"); $("json").value = text; }
 }
 
-function field(title, meta, html, copyText) {
-  const id = "c" + Math.random().toString(36).slice(2);
-  window[id] = copyText;
-  return `<div class="field"><h3>${esc(title)} <span>${esc(meta || "")}</span>${copyText != null ? `<button type="button" class="secondary copy" onclick="copy(window['${id}'], this)">Копировать</button>` : ""}</h3>${html}</div>`;
+/* ---------- отображение ---------- */
+function show(which) {
+  ["empty", "loading", "error", "result"].forEach(id => $(id).classList.toggle("hidden", id !== which));
 }
 
-const STATUS = { ok: "Готово к вычитке — автоматические проверки пройдены", needs_review: "Требует проверки — см. замечания ниже", insufficient_data: "Недостаточно данных — генерация не выполнялась" };
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const t = btn.textContent; btn.textContent = "Скопировано ✓"; setTimeout(() => (btn.textContent = t), 1200);
+  });
+}
 
-function renderCard(card) {
+function copyBtn(key) { return `<button type="button" class="copy" data-copy="${key}">Копировать</button>`; }
+
+function ring(filled, total) {
+  const r = 20, c = 2 * Math.PI * r, part = total ? filled / total : 0;
+  const color = part === 1 ? "var(--ok)" : "var(--warn)";
+  return `<svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+    <circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/>
+    <circle cx="26" cy="26" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c * part} ${c}" transform="rotate(-90 26 26)"/></svg>`;
+}
+
+function tiles(card) {
+  const filled = card.key_characteristics.filter(c => c.source === "input").length;
+  const total = card.key_characteristics.length;
+  const generated = card.seo_title != null;
+  const tl = card.seo_title_length ?? 0, dl = card.seo_description_length ?? 0, qn = card.search_queries.length;
+  const lo = 500, hi = 1500, pos = (x) => Math.max(0, Math.min(100, (x - lo) / (hi - lo) * 100));
+  const descOk = dl >= DESC_MIN && dl <= DESC_MAX;
+  return `
+    <div class="panel tile"><div class="k">SEO title</div>
+      <div class="v ${generated ? (tl <= TITLE_MAX ? "good" : "bad") : ""}">${generated ? tl : "—"}<small> / ${TITLE_MAX} симв.</small></div>
+      <div class="meter"><i style="width:${Math.min(100, tl / TITLE_MAX * 100)}%"></i></div></div>
+    <div class="panel tile"><div class="k">SEO description</div>
+      <div class="v ${generated ? (descOk ? "good" : "bad") : ""}">${generated ? dl : "—"}<small> симв.</small></div>
+      <div class="meter"><span class="zone" style="left:${pos(DESC_MIN)}%;width:${pos(DESC_MAX) - pos(DESC_MIN)}%"></span>${generated ? `<span class="mark" style="left:${pos(dl)}%"></span>` : ""}</div>
+      <div class="s">норма ${DESC_MIN}–${DESC_MAX}</div></div>
+    <div class="panel tile"><div class="k">Характеристики</div>
+      <div class="ring">${ring(filled, total)}<div><div class="v">${filled}<small> из ${total}</small></div><div class="s">${total - filled ? `${total - filled} — «данных нет»` : "все заполнены"}</div></div></div></div>
+    <div class="panel tile"><div class="k">Автопроверка</div>
+      <div class="v ${card.validation.passed ? "good" : "bad"}">${card.status === "insufficient_data" ? "—" : card.validation.passed ? "Пройдена" : card.validation.issues.length + " замеч."}</div>
+      <div class="s">${card.status === "insufficient_data" ? "LLM не вызывалась" : `попыток генерации: ${card.validation.attempts}`}${generated ? ` · запросов: ${qn}` : ""}</div></div>`;
+}
+
+function checks(card) {
+  if (card.status === "insufficient_data") return "";
+  const issues = card.validation.issues;
+  const has = (pred) => issues.filter(pred);
+  const item = (pass, title, detail) => `<div class="check ${pass ? "pass" : "fail"}"><span class="ic">${pass ? "✓" : "!"}</span><div><b>${esc(title)}</b><span>${detail}</span></div></div>`;
+  const nums = has(i => i.code === "ungrounded_number"), terms = has(i => i.code === "ungrounded_term");
+  const tl = card.seo_title_length, dl = card.seo_description_length, qn = card.search_queries.length;
+  const list = (arr) => arr.map(i => esc(i.message)).join("<br>");
+  return `<div class="sec"><div class="sec-h"><h3>Автоматическая проверка</h3><span class="count">${esc(card.meta.provider)} / ${esc(card.meta.model)}</span></div><div class="checks">
+    ${item(tl <= TITLE_MAX, "Длина SEO title", `${tl} из ${TITLE_MAX} символов`)}
+    ${item(dl >= DESC_MIN && dl <= DESC_MAX, "Длина SEO description", `${dl} символов, норма ${DESC_MIN}–${DESC_MAX}`)}
+    ${item(qn >= Q_MIN && qn <= Q_MAX, "Поисковые запросы", `${qn}, норма ${Q_MIN}–${Q_MAX}`)}
+    ${item(!nums.length, "Числа только из входа", nums.length ? list(nums) : "каждое число в текстах есть во входных данных")}
+    ${item(!terms.length, "Термины только из входа", terms.length ? list(terms) : "IP, интерфейсы, ГОСТ, поверка и т.п. не придуманы")}
+  </div></div>`;
+}
+
+function preview(card) {
   let h = "";
   if (card.seo_title != null) {
-    h += field("SEO title", `${card.seo_title_length}/70`, `<div class="text">${esc(card.seo_title)}</div>`, card.seo_title);
-    h += field("SEO description", `${card.seo_description_length} симв., норма 800–1200`, `<div class="text">${esc(card.seo_description)}</div>`, card.seo_description);
+    const snippet = card.seo_description.replace(/\s+/g, " ");
+    h += `<div class="sec"><div class="sec-h"><h3>Как карточка выглядит в поиске</h3></div>
+      <div class="serp"><div class="url"><span class="fav">СП</span>souz-pribor.ru › каталог</div>
+      <div class="t">${esc(card.seo_title)}</div><div class="d">${esc(snippet.length > 170 ? snippet.slice(0, 167).trimEnd() + "…" : snippet)}</div></div></div>`;
+    h += `<div class="sec"><div class="sec-h"><h3>SEO title</h3><span class="count">${card.seo_title_length}/${TITLE_MAX}</span>${copyBtn("title")}</div><div style="font-size:17px;font-weight:600">${esc(card.seo_title)}</div></div>`;
+    h += `<div class="sec"><div class="sec-h"><h3>SEO description</h3><span class="count">${card.seo_description_length} симв.</span>${copyBtn("description")}</div>
+      <div class="desc">${card.seo_description.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join("")}</div></div>`;
   }
-  const rows = card.key_characteristics.map(c => `<tr><td>${esc(c.name)}</td><td class="${c.source === "missing" ? "missing" : ""}">${esc(c.value)}</td></tr>`).join("");
-  const tsv = card.key_characteristics.map(c => `${c.name}\t${c.value}`).join("\n");
-  h += field("Ключевые характеристики", "из входных данных", `<table>${rows}</table>`, tsv);
-  if (card.search_queries.length) h += field("Поисковые запросы", "", `<ol>${card.search_queries.map(q => `<li>${esc(q)}</li>`).join("")}</ol>`, card.search_queries.join("\n"));
+  const rows = card.key_characteristics.map(c => `<tr><td>${esc(c.name)}</td><td class="val">${c.source === "missing" ? `<span class="nodata">данных нет</span>` : esc(c.value)}</td></tr>`).join("");
+  h += `<div class="sec"><div class="sec-h"><h3>Ключевые характеристики</h3><span class="count">дословно из входных данных</span>${copyBtn("specs")}</div><div class="tablewrap"><table>${rows}</table></div></div>`;
+  if (card.search_queries.length) {
+    h += `<div class="sec"><div class="sec-h"><h3>Поисковые запросы</h3><span class="count">${card.search_queries.length}</span>${copyBtn("queries")}</div>
+      <div class="qchips">${card.search_queries.map(q => `<span class="q">⌕ ${esc(q)}</span>`).join("")}</div></div>`;
+  }
   if (card.commercial_block) {
     const cb = card.commercial_block;
-    const txt = `Кому подходит:\n- ${cb.audience.join("\n- ")}\n\nЗадачи:\n- ${cb.tasks.join("\n- ")}\n\n${cb.summary}`;
-    h += field("Для менеджера", "", `<b>Кому подходит:</b><ul>${cb.audience.map(a => `<li>${esc(a)}</li>`).join("")}</ul><b>Какие задачи решает:</b><ul>${cb.tasks.map(t => `<li>${esc(t)}</li>`).join("")}</ul><p>${esc(cb.summary)}</p>`, txt);
+    h += `<div class="sec"><div class="sec-h"><h3>Для менеджера</h3>${copyBtn("commercial")}</div>
+      <div class="cols"><div class="box"><h4>Кому подходит</h4><ul>${cb.audience.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>
+      <div class="box"><h4>Какие задачи решает</h4><ul>${cb.tasks.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div></div>
+      ${cb.summary ? `<div class="quote"><b>Коротко для клиента:</b> ${esc(cb.summary)}</div>` : ""}</div>`;
   }
-  const gaps = card.missing_data.map(m => `<li><b>${esc(m.field)}</b> — ${esc(m.comment)}</li>`).concat(card.needs_clarification.map(c => `<li>${esc(c)}</li>`));
-  if (gaps.length) h += field("Недостающие данные и что уточнить", "", `<ul>${gaps.join("")}</ul>`, null);
-  if (card.input_warnings.length) h += field("Предупреждения по входу", "", `<ul>${card.input_warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>`, null);
-  const v = card.validation;
-  const vHtml = card.status === "insufficient_data" ? "Генерация не выполнялась." : v.passed
-    ? `Пройдена с ${v.attempts}-й попытки: длины в норме, все числа и термины есть во входных данных.`
-    : `<ul>${v.issues.map(i => `<li><code>${esc(i.field)}</code>: ${esc(i.message)}</li>`).join("")}</ul>`;
-  h += field("Автоматическая проверка", `${card.meta.provider} / ${card.meta.model}`, vHtml, null);
+  const gaps = card.missing_data.map(m => `<div class="gap ${m.in_description ? "info" : ""}"><span class="ic">${m.in_description ? "i" : "?"}</span><div><b>${esc(m.field)}</b><span>${esc(m.comment)}</span></div></div>`)
+    .concat(card.needs_clarification.map(c => `<div class="gap"><span class="ic">?</span><div><span>${esc(c)}</span></div></div>`))
+    .concat(card.input_warnings.map(w => `<div class="gap"><span class="ic">!</span><div><span>${esc(w)}</span></div></div>`));
+  if (gaps.length) h += `<div class="sec"><div class="sec-h"><h3>Недостающие данные — что уточнить</h3><span class="count">${card.missing_data.length}</span></div><div class="gaps">${gaps.join("")}</div></div>`;
+  h += checks(card);
   return h;
 }
 
-function showOut(which) {
-  ["card", "markdown", "json"].forEach(k => $("out" + k[0].toUpperCase() + k.slice(1)).classList.toggle("hidden", k !== which));
+function renderCard(card, markdown, scroll = true) {
+  current = { card, markdown };
+  const [label, icon] = STATUS[card.status];
+  const when = new Date(card.meta.generated_at).toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+  $("hero").innerHTML = `<span class="pill ${card.status}">${icon} ${label}</span>
+    <h2>${esc(card.product_name)}</h2>
+    <div class="meta"><span>Производитель: <b>${esc(card.manufacturer || "—")}</b></span><span>Тип: ${esc(card.meta.instrument_type)}</span>
+    <span>${card.status === "insufficient_data" ? "LLM не вызывалась" : `Модель: ${esc(card.meta.model)}`}</span><span>${esc(when)}</span></div>`;
+  $("tiles").innerHTML = tiles(card);
+  $("outPreview").innerHTML = preview(card);
+  $("mdPre").textContent = markdown;
+  $("jsonPre").textContent = JSON.stringify(card, null, 2);
+  showTab("preview");
+  show("result");
+  if (scroll) $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function copyPayload(key) {
+  const c = current.card;
+  if (key === "markdown") return current.markdown;
+  if (key === "json") return JSON.stringify(c, null, 2);
+  if (key === "title") return c.seo_title;
+  if (key === "description") return c.seo_description;
+  if (key === "specs") return c.key_characteristics.map(x => `${x.name}\t${x.value}`).join("\n");
+  if (key === "queries") return c.search_queries.join("\n");
+  if (key === "commercial") {
+    const cb = c.commercial_block;
+    return `Кому подходит:\n- ${cb.audience.join("\n- ")}\n\nЗадачи:\n- ${cb.tasks.join("\n- ")}\n\n${cb.summary}`;
+  }
+  return "";
+}
+
+function showTab(which) {
+  ["preview", "markdown", "json"].forEach(k => $("out" + k[0].toUpperCase() + k.slice(1)).classList.toggle("hidden", k !== which));
   document.querySelectorAll("#outTabs button").forEach(b => b.classList.toggle("active", b.dataset.out === which));
+}
+
+function showError(title, messages) {
+  $("error").innerHTML = `<span class="pill error">✕ ${esc(title)}</span><ul>${messages.map(m => `<li>${esc(m)}</li>`).join("")}</ul>`;
+  show("error");
+}
+
+/* ---------- генерация ---------- */
+let progressTimer;
+function startProgress() {
+  let step = 0;
+  const paint = () => document.querySelectorAll("#progress div").forEach(d => {
+    const n = +d.dataset.step;
+    d.className = n < step ? "done" : n === step ? "active" : "";
+    d.querySelector(".tick").outerHTML = n < step ? `<span class="tick">✓</span>` : n === step ? `<span class="tick"><span class="spinner"></span></span>` : `<span class="tick">•</span>`;
+  });
+  paint();
+  // Разбор занимает доли секунды; основное время — ответ LLM, затем проверка и возможная доработка.
+  progressTimer = [setTimeout(() => { step = 1; paint(); }, 500), setTimeout(() => { step = 2; paint(); }, 8000)];
 }
 
 async function submit(e) {
   e.preventDefault();
   const body = mode === "json" ? $("json").value : JSON.stringify(formToObject());
-  $("submit").disabled = true; $("hint").textContent = "Генерация, обычно 10–40 секунд…";
-  $("placeholder").classList.add("hidden"); $("result").classList.remove("hidden");
+  document.querySelectorAll(".saved button").forEach(b => b.classList.remove("active"));
+  $("submit").disabled = true;
+  show("loading"); startProgress();
+  $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     const resp = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body });
     const data = await resp.json();
     if (!resp.ok) {
-      $("status").className = "status error";
-      $("status").innerHTML = "Ошибка: " + (data.messages || [JSON.stringify(data)]).map(esc).join("<br>");
-      $("outCard").innerHTML = ""; $("mdPre").textContent = ""; $("jsonPre").textContent = "";
+      const titles = { invalid_input: "Ошибка во входных данных", llm_error: "Ошибка LLM API", not_configured: "Сервис не настроен" };
+      showError(titles[data.error] || "Ошибка", data.messages || [JSON.stringify(data)]);
       return;
     }
-    $("status").className = "status " + data.card.status;
-    $("status").textContent = STATUS[data.card.status];
-    $("outCard").innerHTML = renderCard(data.card);
-    $("mdPre").textContent = data.markdown;
-    $("jsonPre").textContent = JSON.stringify(data.card, null, 2);
+    renderCard(data.card, data.markdown);
   } catch (err) {
-    $("status").className = "status error"; $("status").textContent = "Сервис недоступен: " + err;
+    showError("Сервис недоступен", [String(err)]);
   } finally {
-    $("submit").disabled = false; $("hint").textContent = "";
+    (progressTimer || []).forEach(clearTimeout);
+    $("submit").disabled = false;
   }
 }
 
+/* ---------- инициализация ---------- */
 document.querySelectorAll("#inputTabs button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
-document.querySelectorAll("#outTabs button").forEach(b => b.addEventListener("click", () => showOut(b.dataset.out)));
-document.querySelectorAll("[data-copy-target]").forEach(b => b.addEventListener("click", () => copy($(b.dataset.copyTarget).textContent, b)));
+document.querySelectorAll("#outTabs button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.out)));
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-copy]");
+  if (btn && current.card) copyText(copyPayload(btn.dataset.copy), btn);
+});
 $("form").addEventListener("submit", submit);
 
+fetch("/api/health").then(r => r.json()).then(h => {
+  $("modelDot").className = "dot " + (h.configured ? "on" : "off");
+  $("modelText").innerHTML = h.configured
+    ? `<span class="long">Модель: </span><b>${esc(h.model)}</b>`
+    : "Ключ API не настроен";
+  if (!h.configured) $("model").title = h.message;
+}).catch(() => { $("modelDot").className = "dot off"; $("modelText").textContent = "Сервер недоступен"; });
+
 fetch("/api/examples").then(r => r.json()).then(items => {
-  Object.entries(items).forEach(([name, text]) => {
-    const o = document.createElement("option"); o.value = text; o.textContent = name; $("exampleSelect").appendChild(o);
+  Object.entries(items).forEach(([key, text]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = EXAMPLE_LABELS[key] || key;
+    b.addEventListener("click", () => loadExample(text));
+    $("exampleChips").appendChild(b);
   });
 });
-$("exampleSelect").addEventListener("change", (e) => {
-  if (!e.target.value) return;
-  $("json").value = e.target.value;
-  try { objectToForm(JSON.parse(e.target.value)); } catch (err) { setMode("json"); }
-  e.target.value = "";
+
+fetch("/api/results").then(r => r.json()).then(items => {
+  const entries = Object.entries(items);
+  if (!entries.length) { $("savedPanel").classList.add("hidden"); return; }
+  entries.forEach(([key, item]) => {
+    const [title, sub] = RESULT_LABELS[key] || [item.card.product_name, STATUS[item.card.status][0]];
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = `<b>${esc(title)}</b><span>${esc(sub)}</span>`;
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".saved button").forEach(x => x.classList.toggle("active", x === b));
+      renderCard(item.card, item.markdown);
+    });
+    $("saved").appendChild(b);
+  });
+  const first = $("saved").querySelector("button");
+  if (first) { first.classList.add("active"); renderCard(entries[0][1].card, entries[0][1].markdown, false); }
 });
 </script>
 </body>
